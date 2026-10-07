@@ -1,0 +1,35 @@
+# RinganBrowser .gitignore
+
+# Build outputs
+dist/
+build/
+*.exe
+*.dll
+*.res
+*.o
+*.obj
+*.pdb
+*.ilk
+*.log
+debug.log
+
+# Inno Setup
+_is*.tmp
+
+# Android build artifacts
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/*.iml
+*.apk
+*.aab
+
+# Editor & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

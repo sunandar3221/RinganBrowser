@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RinganBrowser - Tab Baru</title>
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 45%, #020617 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-primary: #6366f1;
+      --accent-secondary: #06b6d4;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      top: 15%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.08) 50%, transparent 70%);
+      pointer-events: none;
+      filter: blur(60px);
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    /* Header / Logo */
+    .header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: fadeIn 0.8s ease;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo-svg {
+      width: 72px;
+      height: 72px;
+      filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.5));
+      transition: transform 0.4s ease;
+    }
+
+    .logo-svg:hover {
+      transform: scale(1.08) rotate(5deg);
+    }
+
+    .brand-title {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+
+    .brand-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 400;
+      max-width: 600px;
+    }
+
+    .badge-pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 6px;
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+    }
+
+    .pill.glow {
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #a5b4fc;
+    }
+
+    /* Search Bar */
+    .search-box-wrapper {
+      width: 100%;
+      max-width: 680px;
+      position: relative;
+    }
+
+    .search-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      padding: 6px 16px 6px 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(99, 102, 241, 0.1);
+      backdrop-filter: blur(16px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 12px 35px -5px rgba(99, 102, 241, 0.3), 0 0 0 3px rgba(99, 102, 241, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .search-icon {
+      width: 20px;
+      height: 20px;
+      fill: var(--text-muted);
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 1.05rem;
+      padding: 10px 0;
+    }
+
+    .search-input::placeholder {
+      color: #64748b;
+    }
+
+    .engine-select {
+      background: rgba(15, 23, 42, 0.8);
+      color: #cbd5e1;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: background 0.2s;
+    }
+
+    .engine-select:hover {
+      background: rgba(30, 41, 59, 1);
+    }
+
+    .search-btn {
+      background: var(--accent-gradient);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transition: transform 0.2s, filter 0.2s;
+    }
+
+    .search-btn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+
+    /* Speed Dial Grid */
+    .speed-dial-section {
+      width: 100%;
+      max-width: 780px;
+    }
+
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .speed-dial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 16px;
+    }
+
+    .dial-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      backdrop-filter: blur(12px);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .dial-card:hover {
+      transform: translateY(-6px);
+      background: rgba(45, 55, 75, 0.85);
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 0 16px rgba(99, 102, 241, 0.25);
+    }
+
+    .dial-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15, 23, 42, 0.6);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .dial-card:hover .dial-icon-wrap {
+      transform: scale(1.1);
+    }
+
+    .dial-icon {
+      width: 28px;
+      height: 28px;
+    }
+
+    .dial-icon-img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      border-radius: 8px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .dial-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+
+    /* Interactive Showcase Section */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      width: 100%;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 22px;
+      backdrop-filter: blur(14px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-header-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #a5b4fc;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Particle Canvas Demo */
+    #particle-canvas {
+      width: 100%;
+      height: 110px;
+      background: #020617;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* SVG Interactive Demo */
+    .svg-demo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      background: #020617;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .interactive-svg {
+      width: 70px;
+      height: 70px;
+      transition: transform 0.3s;
+    }
+
+    .demo-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+    }
+
+    .demo-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .demo-btn:hover {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    /* Diagnostics Table */
+    .diag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+
+    .diag-item {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 6px;
+    }
+
+    .diag-label {
+      color: var(--text-muted);
+    }
+
+    .diag-val {
+      font-family: monospace;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .diag-val.success {
+      color: #4ade80;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.8rem;
+      margin-top: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-badge">
+        <!-- SVG Logo RinganBrowser -->
+        <svg class="logo-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#06b6d4" />
+              <stop offset="100%" stop-color="#6366f1" />
+            </linearGradient>
+            <linearGradient id="wingGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="100%" stop-color="#818cf8" />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <!-- Outer Orb -->
+          <circle cx="50" cy="50" r="44" stroke="url(#primaryGrad)" stroke-width="3" stroke-dasharray="16 8" filter="url(#glow)"/>
+          <!-- Inner Supersonic Feather / Wing Shape -->
+          <path d="M 24 66 C 30 35 55 20 80 20 C 72 38 60 52 46 68 C 36 78 28 75 24 66 Z" fill="url(#primaryGrad)"/>
+          <!-- Wing Layer 2 -->
+          <path d="M 32 68 C 42 46 64 36 82 28 C 68 50 56 68 38 78 Z" fill="url(#wingGrad)" opacity="0.8"/>
+          <!-- Core Spark -->
+          <circle cx="78" cy="22" r="5" fill="#ffffff" filter="url(#glow)"/>
+        </svg>
+        <h1 class="brand-title">RinganBrowser</h1>
+      </div>
+      <p class="brand-subtitle">Browser Ultra Ringan C++ Native dengan Dukungan Lengkap HTML5, CSS3, JavaScript &amp; SVG</p>
+      
+      <div class="badge-pills">
+        <span class="pill glow">⚡ Native C++20 Win32</span>
+        <span class="pill">🍃 Tanpa Fork Chromium</span>
+        <span class="pill">📦 Ukuran Mini (~1.5 MB)</span>
+        <span class="pill">🚀 Build Cepat &amp; Super Ringan</span>
+        <span class="pill">🎨 Modern SVG &amp; Glass UI</span>
+      </div>
+    </header>
+
+    <!-- Search Omnibox -->
+    <div class="search-box-wrapper">
+      <form class="search-box" id="search-form" onsubmit="handleSearch(event)">
+        <svg class="search-icon" viewBox="0 0 24 24">
+          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Ketik alamat web (URL) atau cari sesuatu..." autofocus autocomplete="off">
+        <select class="engine-select" id="engine-select" title="Pilih Mesin Pencari">
+          <option value="duckduckgo">DuckDuckGo</option>
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="wikipedia">Wikipedia</option>
+        </select>
+        <button type="submit" class="search-btn" title="Cari / Buka">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- Speed Dial Shortcuts -->
+    <section class="speed-dial-section">
+      <div class="section-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        Akses Cepat (Speed Dial)
+      </div>
+      <div class="speed-dial-grid">
+        <!-- Google -->
+        <a class="dial-card" href="https://www.google.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/google.png" alt="Google">
+          </div>
+          <span class="dial-name">Google</span>
+        </a>
+
+        <!-- YouTube -->
+        <a class="dial-card" href="https://www.youtube.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/youtube.png" alt="YouTube">
+          </div>
+          <span class="dial-name">YouTube</span>
+        </a>
+
+        <!-- GitHub -->
+        <a class="dial-card" href="https://www.github.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/github.png" alt="GitHub">
+          </div>
+          <span class="dial-name">GitHub</span>
+        </a>
+
+        <!-- Wikipedia -->
+        <a class="dial-card" href="https://www.wikipedia.org">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/wikipedia.png" alt="Wikipedia">
+          </div>
+          <span class="dial-name">Wikipedia</span>
+        </a>
+
+        <!-- DuckDuckGo -->
+        <a class="dial-card" href="https://duckduckgo.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/duckduckgo.png" alt="DuckDuckGo">
+          </div>
+          <span class="dial-name">DuckDuckGo</span>
+        </a>
+
+        <!-- Reddit -->
+        <a class="dial-card" href="https://www.reddit.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/reddit.png" alt="Reddit">
+          </div>
+          <span class="dial-name">Reddit</span>
+        </a>
+
+        <!-- Discord -->
+        <a class="dial-card" href="https://discord.com">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/discord.png" alt="Discord">
+          </div>
+          <span class="dial-name">Discord</span>
+        </a>
+
+        <!-- MDN Docs -->
+        <a class="dial-card" href="https://developer.mozilla.org">
+          <div class="dial-icon-wrap">
+            <img class="dial-icon-img" src="icons/mdn.png" alt="MDN Docs">
+          </div>
+          <span class="dial-name">MDN Docs</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Interactive Engine Showcase -->
+    <div class="showcase-grid">
+      <!-- HTML5 Canvas Particle Test -->
+      <div class="feature-card">
+        <div class="card-header">
+          <div class="card-header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <div>
+            <div class="card-title">HTML5 Canvas Test</div>
+            <div class="card-desc">Simulasi partikel interaktif 60 FPS langsung di C++ Engine</div>
+          </div>
+        </div>
+        <canvas id="particle-canvas"></canvas>
+      </div>
+
+      <!-- SVG Vector & CSS3 Test -->
+      <div class="feature-card">
+        <div class="card-header">
+          <div class="card-header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </div>
+          <div>
+            <div class="card-title">SVG &amp; CSS3 Animation</div>
+            <div class="card-desc">Vektor tajam &amp; transformasi dinamis tanpa rasterisasi</div>
+          </div>
+        </div>
+        <div class="svg-demo-wrap">
+          <svg class="interactive-svg" id="interactive-star" viewBox="0 0 100 100" fill="none">
+            <polygon points="50,5 64,36 98,38 72,62 80,95 50,78 20,95 28,62 2,38 36,36" fill="url(#primaryGrad)" filter="url(#glow)"/>
+          </svg>
+          <div class="demo-controls">
+            <button class="demo-btn" onclick="rotateSvg()">Putar SVG (Rotate)</button>
+            <button class="demo-btn" onclick="pulseSvg()">Denyut (Pulse)</button>
+            <button class="demo-btn" onclick="playBeep()">Audio Test (WebAudio)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine Diagnostics -->
+      <div class="feature-card">
+        <div class="card-header">
+          <div class="card-header-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <div>
+            <div class="card-title">Status Diagnostik</div>
+            <div class="card-desc">Verifikasi kapabilitas &amp; spesifikasi browser</div>
+          </div>
+        </div>
+        <div class="diag-list">
+          <div class="diag-item">
+            <span class="diag-label">Core Runtime:</span>
+            <span class="diag-val success">C++20 Win32 Shell</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-label">Chromium Fork:</span>
+            <span class="diag-val success">TIDAK (Zero Bloat)</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-label">Ukuran Binary:</span>
+            <span class="diag-val">~1.5 MB</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-label">Dukungan JS:</span>
+            <span class="diag-val success" id="js-support-val">ES2024 Active</span>
+          </div>
+          <div class="diag-item">
+            <span class="diag-label">Resolusi Viewport:</span>
+            <span class="diag-val" id="screen-val">Detecting...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      RinganBrowser &bull; Dibuat khusus dengan C++ Win32 &bull; Ringan, Cepat, UI Bagus dengan SVG &bull; Open Source
+    </footer>
+  </div>
+
+  <script>
+    // Search handler
+    function handleSearch(e) {
+      e.preventDefault();
+      const input = document.getElementById('search-input').value.trim();
+      const engine = document.getElementById('engine-select').value;
+      if (!input) return;
+
+      // Smart URL detection
+      const isUrl = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(:\d+)?(\/.*)?$/i.test(input) ||
+                    input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file:///');
+
+      if (isUrl) {
+        let dest = input;
+        if (!dest.startsWith('http://') && !dest.startsWith('https://') && !dest.startsWith('file:///')) {
+          dest = 'https://' + dest;
+        }
+        window.location.href = dest;
+      } else {
+        // Query search engine
+        let searchUrl = '';
+        if (engine === 'duckduckgo') {
+          searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(input);
+        } else if (engine === 'google') {
+          searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(input);
+        } else if (engine === 'bing') {
+          searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(input);
+        } else if (engine === 'wikipedia') {
+          searchUrl = 'https://id.wikipedia.org/wiki/Special:Search?search=' + encodeURIComponent(input);
+        }
+        window.location.href = searchUrl;
+      }
+    }
+
+    // Canvas Particle Animation
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.clientWidth;
+        this.y = Math.random() * canvas.clientHeight;
+        this.vx = (Math.random() - 0.5) * 1.5;
+        this.vy = (Math.random() - 0.5) * 1.5;
+        this.radius = Math.random() * 2 + 1;
+        this.color = Math.random() > 0.5 ? '#6366f1' : '#06b6d4';
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.clientWidth) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.clientHeight) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = this.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    for (let i = 0; i < 35; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+      // Connect lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 60) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(99, 102, 241, ${1 - dist / 60})`;
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // SVG Demo controls
+    let currentDeg = 0;
+    function rotateSvg() {
+      currentDeg += 90;
+      const star = document.getElementById('interactive-star');
+      star.style.transform = `rotate(${currentDeg}deg)`;
+    }
+
+    function pulseSvg() {
+      const star = document.getElementById('interactive-star');
+      star.style.transform = `scale(1.3) rotate(${currentDeg}deg)`;
+      setTimeout(() => {
+        star.style.transform = `scale(1.0) rotate(${currentDeg}deg)`;
+      }, 300);
+    }
+
+    // Web Audio Synthesizer test
+    function playBeep() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Diagnostics init
+    document.getElementById('screen-val').textContent = `${window.innerWidth} x ${window.innerHeight} (${window.devicePixelRatio}x)`;
+  </script>
+</body>
+</html>

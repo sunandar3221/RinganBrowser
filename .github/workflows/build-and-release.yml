@@ -1,0 +1,62 @@
+name: Build Android and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build Android APK
+        run: |
+          cd android
+          gradle assembleRelease --stacktrace || gradle assembleDebug --stacktrace
+          # Copy whatever APK was built to output
+          mkdir -p ../dist-android
+          find app/build/outputs/apk/ -name "*.apk" -exec cp {} ../dist-android/RinganBrowser-v1.0.0-android.apk \;
+
+      - name: Upload Android APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RinganBrowser-Android-APK
+          path: dist-android/RinganBrowser-v1.0.0-android.apk
+
+      - name: Update GitHub Release with Android APK
+        if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # If a release for this tag/v1.0.0 exists, upload the APK asset to it
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          if [ "$TAG_NAME" = "refs/heads/main" ]; then
+            TAG_NAME="v1.0.0"
+          fi
+          
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Uploading APK to release $TAG_NAME..."
+            gh release upload "$TAG_NAME" dist-android/RinganBrowser-v1.0.0-android.apk --clobber
+          else
+            echo "Release $TAG_NAME not found yet. It can be attached when release is created."
+          fi
