@@ -14,6 +14,7 @@ extern "C" HRESULT STDAPICALLTYPE CreateCoreWebView2EnvironmentWithOptions(
     ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler* environmentCreatedHandler);
 
 BrowserApp::BrowserApp() {
+    LoadSearchEnginePreference();
 }
 
 BrowserApp::~BrowserApp() {
@@ -259,12 +260,38 @@ void BrowserApp::CreateWebViewForTab(int tabIndex, const std::wstring& urlToLoad
                             if (tabIndex < (int)m_tabs.size() && m_tabs[tabIndex].webview == sender) {
                                 m_tabs[tabIndex].isLoading = false;
                                 InvalidateRect(m_hWnd, nullptr, FALSE);
+
+                                // If this is start page, sync the active search engine badge
+                                if (m_tabs[tabIndex].url.find(L"startpage.html") != std::wstring::npos) {
+                                    std::wstring js = L"if (typeof updateSearchEngineBadge === 'function') { updateSearchEngineBadge('" + m_searchEngine + L"'); }";
+                                    sender->ExecuteScript(js.c_str(), nullptr);
+                                }
                             }
                             return S_OK;
                         }
                     );
                     tab.webview->add_NavigationCompleted(navCompHandler, &tab.tokenNavComplete);
                     navCompHandler->Release();
+
+                    // Web Message Received (from startpage.html)
+                    auto msgHandler = new WebViewHandlers::WebMessageReceivedHandler(
+                        [this](ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) -> HRESULT {
+                            LPWSTR jsonMsg = nullptr;
+                            if (SUCCEEDED(args->get_WebMessageAsJson(&jsonMsg)) && jsonMsg) {
+                                std::wstring str(jsonMsg);
+                                CoTaskMemFree(jsonMsg);
+                                if (str.find(L"\"setSearchEngine\"") != std::wstring::npos) {
+                                    if (str.find(L"\"google\"") != std::wstring::npos) SetSearchEngine(L"google");
+                                    else if (str.find(L"\"bing\"") != std::wstring::npos) SetSearchEngine(L"bing");
+                                    else if (str.find(L"\"duckduckgo\"") != std::wstring::npos) SetSearchEngine(L"duckduckgo");
+                                    else if (str.find(L"\"wikipedia\"") != std::wstring::npos) SetSearchEngine(L"wikipedia");
+                                }
+                            }
+                            return S_OK;
+                        }
+                    );
+                    tab.webview->add_WebMessageReceived(msgHandler, &tab.tokenWebMessage);
+                    msgHandler->Release();
 
                     // New Window Requested -> Open in new tab!
                     auto newWinHandler = new WebViewHandlers::NewWindowRequestedHandler(
@@ -370,8 +397,8 @@ void BrowserApp::Navigate(const std::wstring& input) {
         // Looks like domain name e.g. "github.com" or "wikipedia.org"
         finalUrl = L"https://" + trimmed;
     } else {
-        // Query search
-        finalUrl = std::wstring(Config::SEARCH_ENGINE_DUCKDUCKGO) + trimmed;
+        // Query search using active search engine
+        finalUrl = GetSearchEngineUrl() + trimmed;
     }
 
     if (tab.webview) {
@@ -461,15 +488,93 @@ void BrowserApp::OpenDownloadsFolder() {
     }
 }
 
+void BrowserApp::LoadSearchEnginePreference() {
+    wchar_t localAppData[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, localAppData))) {
+        std::wstring iniFile = std::wstring(localAppData) + L"\\RinganBrowser\\settings.ini";
+        wchar_t buf[64] = { 0 };
+        GetPrivateProfileStringW(L"Preferences", L"SearchEngine", L"google", buf, 64, iniFile.c_str());
+        m_searchEngine = buf;
+    }
+    if (m_searchEngine.empty()) m_searchEngine = L"google";
+}
+
+void BrowserApp::SaveSearchEnginePreference() {
+    wchar_t localAppData[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, localAppData))) {
+        std::wstring dir = std::wstring(localAppData) + L"\\RinganBrowser";
+        CreateDirectoryW(dir.c_str(), NULL);
+        std::wstring iniFile = dir + L"\\settings.ini";
+        WritePrivateProfileStringW(L"Preferences", L"SearchEngine", m_searchEngine.c_str(), iniFile.c_str());
+    }
+}
+
+std::wstring BrowserApp::GetSearchEngineUrl() const {
+    if (m_searchEngine == L"bing") return Config::SEARCH_ENGINE_BING;
+    if (m_searchEngine == L"duckduckgo") return Config::SEARCH_ENGINE_DUCKDUCKGO;
+    if (m_searchEngine == L"wikipedia") return Config::SEARCH_ENGINE_WIKIPEDIA;
+    return Config::SEARCH_ENGINE_GOOGLE;
+}
+
+void BrowserApp::SetSearchEngine(const std::wstring& engine) {
+    m_searchEngine = engine;
+    SaveSearchEnginePreference();
+    SyncSearchEngineToAllTabs();
+}
+
+void BrowserApp::SyncSearchEngineToAllTabs() {
+    std::wstring js = L"if (typeof updateSearchEngineBadge === 'function') { updateSearchEngineBadge('" + m_searchEngine + L"'); }";
+    for (auto& tab : m_tabs) {
+        if (tab.webview) {
+            tab.webview->ExecuteScript(js.c_str(), nullptr);
+        }
+    }
+}
+
+void BrowserApp::ShowSettingsMenu() {
+    HMENU hMenu = CreatePopupMenu();
+    HMENU hEngineSub = CreatePopupMenu();
+
+    AppendMenuW(hEngineSub, (m_searchEngine == L"google" ? MF_CHECKED : MF_UNCHECKED) | MF_STRING, 2001, L"Google (Default)");
+    AppendMenuW(hEngineSub, (m_searchEngine == L"bing" ? MF_CHECKED : MF_UNCHECKED) | MF_STRING, 2002, L"Bing");
+    AppendMenuW(hEngineSub, (m_searchEngine == L"duckduckgo" ? MF_CHECKED : MF_UNCHECKED) | MF_STRING, 2003, L"DuckDuckGo");
+    AppendMenuW(hEngineSub, (m_searchEngine == L"wikipedia" ? MF_CHECKED : MF_UNCHECKED) | MF_STRING, 2004, L"Wikipedia");
+
+    AppendMenuW(hMenu, MF_POPUP, (UINT_PTR)hEngineSub, L"Mesin Pencari Default");
+    AppendMenuW(hMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(hMenu, MF_STRING, 2010, L"Tentang RinganBrowser...");
+
+    RECT btnRc = GetNavBtnRect(8);
+    POINT pt = { btnRc.left, btnRc.bottom + 2 };
+    ClientToScreen(m_hWnd, &pt);
+
+    int cmd = TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, 0, m_hWnd, NULL);
+
+    DestroyMenu(hEngineSub);
+    DestroyMenu(hMenu);
+
+    if (cmd == 2001) SetSearchEngine(L"google");
+    else if (cmd == 2002) SetSearchEngine(L"bing");
+    else if (cmd == 2003) SetSearchEngine(L"duckduckgo");
+    else if (cmd == 2004) SetSearchEngine(L"wikipedia");
+    else if (cmd == 2010) ShowAboutDialog();
+}
+
 void BrowserApp::ShowAboutDialog() {
+    std::wstring curName = L"Google";
+    if (m_searchEngine == L"bing") curName = L"Bing";
+    else if (m_searchEngine == L"duckduckgo") curName = L"DuckDuckGo";
+    else if (m_searchEngine == L"wikipedia") curName = L"Wikipedia";
+
     std::wstring msg =
         L"RinganBrowser v1.0.0 (Release)\n"
         L"--------------------------------------------------\n"
         L"Browser Modern, Cepat & Ultra Ringan\n"
         L"Ditulis murni dengan C++20 Win32 API.\n\n"
+        L"Mesin Pencari Aktif: " + curName + L"\n\n"
         L"Keunggulan Utama:\n"
         L"• Tanpa fork Chromium (build super cepat < 5 detik)\n"
-        L"• Ukuran executable sangat kecil (~1.5 MB)\n"
+        L"• Ukuran executable sangat kecil (~800 KB)\n"
         L"• UI Modern dengan Ikon Vektor & SVG murni\n"
         L"• Dukungan penuh standar web modern (HTML5, CSS3, JS ES2024, SVG, WebGL)\n"
         L"• Multi-Tab Browsing & DevTools Terintegrasi (F12)\n\n"
@@ -478,6 +583,7 @@ void BrowserApp::ShowAboutDialog() {
         L"• Ctrl+W : Tutup Tab\n"
         L"• Ctrl+L / Alt+D : Fokus Bar Alamat\n"
         L"• Ctrl+R / F5 : Muat Ulang Halaman\n"
+        L"• Ctrl+J : Folder Unduhan\n"
         L"• Alt+Left / Right : Mundur / Maju\n"
         L"• F12 : Buka Developer Tools";
 
@@ -676,7 +782,7 @@ void BrowserApp::HandleClick(int x, int y) {
                 case 5: OpenDownloadsFolder(); break;
                 case 6: ZoomReset(); break;
                 case 7: ToggleDevTools(); break;
-                case 8: ShowAboutDialog(); break;
+                case 8: ShowSettingsMenu(); break;
             }
             return;
         }

@@ -1,7 +1,9 @@
 package com.ringan.browser;
 
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,6 +14,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -28,8 +31,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String PREFS_NAME = "ringan_prefs";
+    private static final String PREF_SEARCH_ENGINE = "search_engine";
     private static final String START_PAGE_URL = "file:///android_asset/startpage.html";
-    private static final String SEARCH_ENGINE_URL = "https://duckduckgo.com/?q=";
 
     private WebView webView;
     private EditText editUrl;
@@ -38,11 +42,16 @@ public class MainActivity extends AppCompatActivity {
     private ImageView iconSsl;
     private ImageButton btnBack;
     private ImageButton btnForward;
+    private SharedPreferences prefs;
+    private String currentSearchEngine = "google";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        currentSearchEngine = prefs.getString(PREF_SEARCH_ENGINE, "google");
 
         initViews();
         setupWebView();
@@ -75,6 +84,21 @@ public class MainActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public String getSearchEngine() {
+                return currentSearchEngine;
+            }
+            @JavascriptInterface
+            public void setSearchEngine(String engine) {
+                runOnUiThread(() -> setSearchEngineInternal(engine));
+            }
+            @JavascriptInterface
+            public void openSettings() {
+                runOnUiThread(() -> showSettingsDialog());
+            }
+        }, "RinganNative");
+
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
@@ -98,6 +122,9 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 updateUrlDisplay(url);
                 updateNavButtons();
+                if (url != null && url.contains("startpage.html")) {
+                    syncSearchEngineToStartPage();
+                }
             }
         });
 
@@ -157,6 +184,56 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btn_home).setOnClickListener(v -> webView.loadUrl(START_PAGE_URL));
 
         findViewById(R.id.btn_refresh).setOnClickListener(v -> webView.reload());
+
+        View btnSettings = findViewById(R.id.btn_settings);
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(v -> showSettingsDialog());
+        }
+    }
+
+    private String getSearchEngineBaseUrl() {
+        if ("bing".equals(currentSearchEngine)) {
+            return "https://www.bing.com/search?q=";
+        } else if ("duckduckgo".equals(currentSearchEngine)) {
+            return "https://duckduckgo.com/html/?q=";
+        } else if ("wikipedia".equals(currentSearchEngine)) {
+            return "https://id.wikipedia.org/wiki/Special:Search?search=";
+        }
+        return "https://www.google.com/search?q=";
+    }
+
+    private void setSearchEngineInternal(String engine) {
+        currentSearchEngine = engine;
+        prefs.edit().putString(PREF_SEARCH_ENGINE, engine).apply();
+        syncSearchEngineToStartPage();
+    }
+
+    private void syncSearchEngineToStartPage() {
+        String js = "if (typeof updateSearchEngineBadge === 'function') { updateSearchEngineBadge('" + currentSearchEngine + "'); }";
+        webView.evaluateJavascript(js, null);
+    }
+
+    private void showSettingsDialog() {
+        final String[] engines = {"Google", "Bing", "DuckDuckGo", "Wikipedia"};
+        final String[] engineKeys = {"google", "bing", "duckduckgo", "wikipedia"};
+
+        int checkedItem = 0;
+        for (int i = 0; i < engineKeys.length; i++) {
+            if (engineKeys[i].equals(currentSearchEngine)) {
+                checkedItem = i;
+                break;
+            }
+        }
+
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.choose_search_engine)
+            .setSingleChoiceItems(engines, checkedItem, (dialog, which) -> {
+                setSearchEngineInternal(engineKeys[which]);
+                Toast.makeText(this, "Mesin pencari diubah ke " + engines[which], Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            })
+            .setNegativeButton("Tutup", null)
+            .show();
     }
 
     private void navigateTo(String input) {
@@ -171,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
         } else if (input.contains(".") && !input.contains(" ")) {
             finalUrl = "https://" + input;
         } else {
-            finalUrl = SEARCH_ENGINE_URL + Uri.encode(input);
+            finalUrl = getSearchEngineBaseUrl() + Uri.encode(input);
         }
 
         webView.loadUrl(finalUrl);

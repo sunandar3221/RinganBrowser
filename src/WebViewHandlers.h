@@ -213,4 +213,30 @@ namespace WebViewHandlers {
         }
     };
 
+    class WebMessageReceivedHandler : public ICoreWebView2WebMessageReceivedEventHandler {
+        LONG m_ref = 1;
+        std::function<HRESULT(ICoreWebView2*, ICoreWebView2WebMessageReceivedEventArgs*)> m_cb;
+    public:
+        WebMessageReceivedHandler(std::function<HRESULT(ICoreWebView2*, ICoreWebView2WebMessageReceivedEventArgs*)> cb) : m_cb(cb) {}
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+            if (!ppv) return E_POINTER;
+            if (InlineIsEqualGUID(riid, IID_IUnknown) || InlineIsEqualGUID(riid, IID_ICoreWebView2WebMessageReceivedEventHandler)) {
+                *ppv = static_cast<ICoreWebView2WebMessageReceivedEventHandler*>(this);
+                AddRef();
+                return S_OK;
+            }
+            *ppv = nullptr;
+            return E_NOINTERFACE;
+        }
+        ULONG STDMETHODCALLTYPE AddRef() override { return InterlockedIncrement(&m_ref); }
+        ULONG STDMETHODCALLTYPE Release() override {
+            LONG r = InterlockedDecrement(&m_ref);
+            if (r == 0) delete this;
+            return r;
+        }
+        HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2WebMessageReceivedEventArgs* args) override {
+            return m_cb ? m_cb(sender, args) : S_OK;
+        }
+    };
+
 }

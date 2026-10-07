@@ -2,4 +2,6 @@
     <string name="app_name">RinganBrowser</string>
     <string name="search_hint">Ketik URL atau cari sesuatu...</string>
     <string name="download_started">Mengunduh berkas...</string>
+    <string name="settings">Pengaturan</string>
+    <string name="choose_search_engine">Pilih Mesin Pencari Default</string>
 </resources>

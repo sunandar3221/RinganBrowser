@@ -37,8 +37,10 @@ namespace Config {
     inline const COLORREF COLOR_BTN_HOVER    = RGB(51, 65, 85);      // Slate 700
 
     // Search Engine URL templates
-    inline const wchar_t* SEARCH_ENGINE_DUCKDUCKGO = L"https://duckduckgo.com/?q=";
     inline const wchar_t* SEARCH_ENGINE_GOOGLE     = L"https://www.google.com/search?q=";
+    inline const wchar_t* SEARCH_ENGINE_BING       = L"https://www.bing.com/search?q=";
+    inline const wchar_t* SEARCH_ENGINE_DUCKDUCKGO = L"https://duckduckgo.com/html/?q=";
+    inline const wchar_t* SEARCH_ENGINE_WIKIPEDIA  = L"https://id.wikipedia.org/wiki/Special:Search?search=";
 
     // Helper to get executable path
     inline std::wstring GetExecutableDir() {

@@ -24,6 +24,7 @@ struct TabItem {
     EventRegistrationToken tokenNavComplete;
     EventRegistrationToken tokenHistory;
     EventRegistrationToken tokenNewWindow;
+    EventRegistrationToken tokenWebMessage;
 };
 
 enum class HoverArea {
@@ -62,7 +63,11 @@ public:
     void ZoomIn();
     void ZoomOut();
     void ZoomReset();
+    void ShowSettingsMenu();
     void ShowAboutDialog();
+    std::wstring GetSearchEngineUrl() const;
+    void SetSearchEngine(const std::wstring& engine);
+    void SyncSearchEngineToAllTabs();
 
     // Tabs
     void NewTab(const std::wstring& initialUrl = L"");
@@ -87,6 +92,9 @@ private:
 
     static LRESULT CALLBACK UrlEditSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
+    void LoadSearchEnginePreference();
+    void SaveSearchEnginePreference();
+
     HINSTANCE m_hInstance = nullptr;
     HWND m_hWnd = nullptr;
     HWND m_hUrlEdit = nullptr;
@@ -97,6 +105,9 @@ private:
     std::vector<TabItem> m_tabs;
     int m_activeTabIndex = -1;
     bool m_envInitialized = false;
+
+    // Search Engine Preference (google, bing, duckduckgo, wikipedia)
+    std::wstring m_searchEngine = L"google";
 
     // Hover state
     HoverArea m_hoverArea = HoverArea::None;

@@ -178,21 +178,26 @@
       color: #64748b;
     }
 
-    .engine-select {
+    .engine-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: rgba(15, 23, 42, 0.8);
       color: #cbd5e1;
       border: 1px solid var(--card-border);
       border-radius: 18px;
       padding: 6px 12px;
       font-size: 0.85rem;
-      outline: none;
       cursor: pointer;
       margin-left: 8px;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      user-select: none;
     }
 
-    .engine-select:hover {
+    .engine-badge:hover {
       background: rgba(30, 41, 59, 1);
+      border-color: var(--accent-primary);
+      color: white;
     }
 
     .search-btn {
@@ -214,6 +219,118 @@
     .search-btn:hover {
       transform: scale(1.05);
       filter: brightness(1.1);
+    }
+
+    /* Settings Modal Dialog */
+    .settings-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .settings-modal-backdrop.active {
+      display: flex;
+    }
+
+    .settings-modal {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .settings-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-close-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+
+    .settings-close-btn:hover {
+      color: white;
+    }
+
+    .engine-option-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .engine-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .engine-option:hover {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .engine-option.selected {
+      border-color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    .engine-radio {
+      accent-color: var(--accent-primary);
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+    }
+
+    .engine-info {
+      flex: 1;
+      text-align: left;
+    }
+
+    .engine-name {
+      font-weight: 600;
+      color: #f8fafc;
+      font-size: 0.95rem;
+    }
+
+    .engine-desc {
+      font-size: 0.78rem;
+      color: #94a3b8;
     }
 
     /* Speed Dial Grid */
@@ -492,12 +609,13 @@
           <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
         </svg>
         <input type="text" class="search-input" id="search-input" placeholder="Ketik alamat web (URL) atau cari sesuatu..." autofocus autocomplete="off">
-        <select class="engine-select" id="engine-select" title="Pilih Mesin Pencari">
-          <option value="duckduckgo">DuckDuckGo</option>
-          <option value="google">Google</option>
-          <option value="bing">Bing</option>
-          <option value="wikipedia">Wikipedia</option>
-        </select>
+        <div class="engine-badge" id="engine-badge" onclick="openSettingsModal()" title="Mesin Pencari Aktif (Klik untuk ubah di Pengaturan)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span id="current-engine-name">Google</span>
+        </div>
         <button type="submit" class="search-btn" title="Cari / Buka">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -505,6 +623,60 @@
           </svg>
         </button>
       </form>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal-backdrop" id="settings-modal" onclick="onModalBackdropClick(event)">
+      <div class="settings-modal">
+        <div class="settings-header">
+          <div class="settings-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            Pengaturan Mesin Pencari
+          </div>
+          <button class="settings-close-btn" onclick="closeSettingsModal()" title="Tutup">&times;</button>
+        </div>
+
+        <div class="engine-option-list">
+          <!-- Google -->
+          <label class="engine-option" id="opt-google" onclick="selectSearchEngine('google')">
+            <input type="radio" name="searchEngineChoice" value="google" class="engine-radio">
+            <div class="engine-info">
+              <div class="engine-name">Google</div>
+              <div class="engine-desc">Mesin pencari paling populer di dunia</div>
+            </div>
+          </label>
+
+          <!-- Bing -->
+          <label class="engine-option" id="opt-bing" onclick="selectSearchEngine('bing')">
+            <input type="radio" name="searchEngineChoice" value="bing" class="engine-radio">
+            <div class="engine-info">
+              <div class="engine-name">Bing</div>
+              <div class="engine-desc">Mesin pencari dari Microsoft</div>
+            </div>
+          </label>
+
+          <!-- DuckDuckGo -->
+          <label class="engine-option" id="opt-duckduckgo" onclick="selectSearchEngine('duckduckgo')">
+            <input type="radio" name="searchEngineChoice" value="duckduckgo" class="engine-radio">
+            <div class="engine-info">
+              <div class="engine-name">DuckDuckGo</div>
+              <div class="engine-desc">Pencarian aman &amp; menjaga privasi</div>
+            </div>
+          </label>
+
+          <!-- Wikipedia -->
+          <label class="engine-option" id="opt-wikipedia" onclick="selectSearchEngine('wikipedia')">
+            <input type="radio" name="searchEngineChoice" value="wikipedia" class="engine-radio">
+            <div class="engine-info">
+              <div class="engine-name">Wikipedia</div>
+              <div class="engine-desc">Ensiklopedia bebas multibahasa</div>
+            </div>
+          </label>
+        </div>
+      </div>
     </div>
 
     <!-- Speed Dial Shortcuts -->
@@ -673,11 +845,103 @@
   </div>
 
   <script>
+    // Engine metadata
+    const ENGINES = {
+      google: { name: 'Google', url: 'https://www.google.com/search?q=' },
+      bing: { name: 'Bing', url: 'https://www.bing.com/search?q=' },
+      duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/html/?q=' },
+      wikipedia: { name: 'Wikipedia', url: 'https://id.wikipedia.org/wiki/Special:Search?search=' }
+    };
+
+    let activeEngine = 'google';
+
+    function initSearchEngine() {
+      // 1. Check native Android bridge
+      if (window.RinganNative && typeof window.RinganNative.getSearchEngine === 'function') {
+        const eng = window.RinganNative.getSearchEngine();
+        if (eng && ENGINES[eng]) {
+          activeEngine = eng;
+        }
+      } else {
+        // 2. Check localStorage
+        const saved = localStorage.getItem('ringan_search_engine');
+        if (saved && ENGINES[saved]) {
+          activeEngine = saved;
+        }
+      }
+      updateSearchEngineBadge(activeEngine);
+    }
+
+    function updateSearchEngineBadge(engine) {
+      if (!ENGINES[engine]) engine = 'google';
+      activeEngine = engine;
+      localStorage.setItem('ringan_search_engine', engine);
+
+      const nameEl = document.getElementById('current-engine-name');
+      if (nameEl) nameEl.textContent = ENGINES[engine].name;
+
+      // Update modal options state
+      Object.keys(ENGINES).forEach(key => {
+        const opt = document.getElementById('opt-' + key);
+        if (opt) {
+          const radio = opt.querySelector('input[type="radio"]');
+          if (key === engine) {
+            opt.classList.add('selected');
+            if (radio) radio.checked = true;
+          } else {
+            opt.classList.remove('selected');
+            if (radio) radio.checked = false;
+          }
+        }
+      });
+    }
+
+    function openSettingsModal() {
+      // Check native Android bridge first
+      if (window.RinganNative && typeof window.RinganNative.openSettings === 'function') {
+        window.RinganNative.openSettings();
+        return;
+      }
+      const modal = document.getElementById('settings-modal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeSettingsModal() {
+      const modal = document.getElementById('settings-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function onModalBackdropClick(e) {
+      if (e.target.id === 'settings-modal') {
+        closeSettingsModal();
+      }
+    }
+
+    function selectSearchEngine(engine) {
+      if (!ENGINES[engine]) return;
+      activeEngine = engine;
+      localStorage.setItem('ringan_search_engine', engine);
+      updateSearchEngineBadge(engine);
+
+      // Notify native Windows WebView2 if present
+      if (window.chrome && window.chrome.webview && typeof window.chrome.webview.postMessage === 'function') {
+        window.chrome.webview.postMessage({ type: 'setSearchEngine', engine: engine });
+      }
+
+      // Notify native Android if present
+      if (window.RinganNative && typeof window.RinganNative.setSearchEngine === 'function') {
+        window.RinganNative.setSearchEngine(engine);
+      }
+
+      setTimeout(() => {
+        closeSettingsModal();
+      }, 150);
+    }
+
     // Search handler
     function handleSearch(e) {
       e.preventDefault();
       const input = document.getElementById('search-input').value.trim();
-      const engine = document.getElementById('engine-select').value;
       if (!input) return;
 
       // Smart URL detection
@@ -692,19 +956,16 @@
         window.location.href = dest;
       } else {
         // Query search engine
-        let searchUrl = '';
-        if (engine === 'duckduckgo') {
-          searchUrl = 'https://duckduckgo.com/?q=' + encodeURIComponent(input);
-        } else if (engine === 'google') {
-          searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(input);
-        } else if (engine === 'bing') {
-          searchUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(input);
-        } else if (engine === 'wikipedia') {
-          searchUrl = 'https://id.wikipedia.org/wiki/Special:Search?search=' + encodeURIComponent(input);
-        }
+        const engObj = ENGINES[activeEngine] || ENGINES.google;
+        const searchUrl = engObj.url + encodeURIComponent(input);
         window.location.href = searchUrl;
       }
     }
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', initSearchEngine);
+    initSearchEngine();
+
 
     // Canvas Particle Animation
     const canvas = document.getElementById('particle-canvas');
