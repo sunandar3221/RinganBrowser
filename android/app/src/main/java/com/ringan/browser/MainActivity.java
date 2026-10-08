@@ -114,6 +114,20 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url == null) return false;
+                String lower = url.toLowerCase();
+                if (lower.endsWith(".apk") || lower.endsWith(".zip") || lower.endsWith(".rar") ||
+                    lower.endsWith(".7z") || lower.endsWith(".tar.gz") || lower.endsWith(".pdf") ||
+                    lower.endsWith(".exe") || lower.endsWith(".dmg") || lower.endsWith(".iso") ||
+                    lower.endsWith(".mp4") || lower.endsWith(".mp3")) {
+                    startDownload(url, null, null, null);
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 updateUrlDisplay(url);
             }
@@ -132,29 +146,42 @@ public class MainActivity extends AppCompatActivity {
         webView.setDownloadListener(new DownloadListener() {
             @Override
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
-                try {
-                    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                    request.setMimeType(mimeType);
-                    String cookies = CookieManager.getInstance().getCookie(url);
-                    request.addRequestHeader("cookie", cookies);
-                    request.addRequestHeader("User-Agent", userAgent);
-                    request.setDescription(getString(R.string.download_started));
-                    String filename = URLUtil.guessFileName(url, contentDisposition, mimeType);
-                    request.setTitle(filename);
-                    request.allowScanningByMediaScanner();
-                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                    request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
-
-                    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                    if (dm != null) {
-                        dm.enqueue(request);
-                        Toast.makeText(MainActivity.this, "Mengunduh " + filename, Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Toast.makeText(MainActivity.this, "Gagal mengunduh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                startDownload(url, userAgent, contentDisposition, mimeType);
             }
         });
+    }
+
+    private void startDownload(String url, String userAgent, String contentDisposition, String mimeType) {
+        try {
+            if (url == null || url.isEmpty()) return;
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            if (mimeType != null && !mimeType.isEmpty()) {
+                request.setMimeType(mimeType);
+            }
+            String cookies = CookieManager.getInstance().getCookie(url);
+            if (cookies != null) {
+                request.addRequestHeader("cookie", cookies);
+            }
+            if (userAgent != null && !userAgent.isEmpty()) {
+                request.addRequestHeader("User-Agent", userAgent);
+            } else {
+                request.addRequestHeader("User-Agent", webView.getSettings().getUserAgentString());
+            }
+            request.setDescription(getString(R.string.download_started));
+            String filename = URLUtil.guessFileName(url, contentDisposition, mimeType);
+            request.setTitle(filename);
+            request.allowScanningByMediaScanner();
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (dm != null) {
+                dm.enqueue(request);
+                Toast.makeText(MainActivity.this, "Mengunduh " + filename + " ke folder Downloads", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(MainActivity.this, "Gagal mengunduh: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupListeners() {
@@ -185,9 +212,31 @@ public class MainActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_refresh).setOnClickListener(v -> webView.reload());
 
+        View btnDownload = findViewById(R.id.btn_download);
+        if (btnDownload != null) {
+            btnDownload.setOnClickListener(v -> openDownloadsFolder());
+        }
+
         View btnSettings = findViewById(R.id.btn_settings);
         if (btnSettings != null) {
             btnSettings.setOnClickListener(v -> showSettingsDialog());
+        }
+    }
+
+    private void openDownloadsFolder() {
+        try {
+            android.content.Intent intent = new android.content.Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+            intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
+                intent.setDataAndType(Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath()), "*/*");
+                intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (Exception ex) {
+                Toast.makeText(this, "Folder unduhan: " + Environment.DIRECTORY_DOWNLOADS, Toast.LENGTH_SHORT).show();
+            }
         }
     }
 

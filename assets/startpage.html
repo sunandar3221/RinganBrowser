@@ -552,6 +552,103 @@
       from { opacity: 0; transform: translateY(-15px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 640px) {
+      body {
+        padding: 20px 12px;
+      }
+
+      .container {
+        gap: 20px;
+        width: 100%;
+      }
+
+      .brand-title {
+        font-size: 2.1rem;
+      }
+
+      .logo-svg {
+        width: 52px;
+        height: 52px;
+      }
+
+      .logo-badge {
+        gap: 10px;
+      }
+
+      .brand-subtitle {
+        font-size: 0.88rem;
+        padding: 0 8px;
+      }
+
+      .badge-pills {
+        gap: 6px;
+      }
+
+      .pill {
+        font-size: 0.72rem;
+        padding: 3px 10px;
+      }
+
+      .search-box-wrapper {
+        max-width: 100%;
+        padding: 0 4px;
+      }
+
+      .search-box {
+        padding: 4px 10px 4px 14px;
+      }
+
+      .search-input {
+        font-size: 0.92rem;
+        padding: 8px 0;
+      }
+
+      .engine-badge {
+        padding: 4px 8px;
+        font-size: 0.78rem;
+        margin-left: 4px;
+      }
+
+      .search-btn {
+        width: 34px;
+        height: 34px;
+        margin-left: 4px;
+      }
+
+      .speed-dial-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .dial-card {
+        padding: 10px 6px;
+      }
+
+      .dial-icon-wrap {
+        width: 40px;
+        height: 40px;
+      }
+
+      .dial-icon-img {
+        width: 26px;
+        height: 26px;
+      }
+
+      .dial-name {
+        font-size: 0.75rem;
+      }
+
+      .showcase-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .feature-card {
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 <body>
